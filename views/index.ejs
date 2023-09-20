@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ToDoList</title>
+    <link rel="stylesheet" href="styles/style.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-4bw+/aepP/YC94hEpVNVgiZdgIC5+VKNBQNGCHeKRQN+PtmoHDEXuppvnDJzQIu9" crossorigin="anonymous">
+</head>
+<body>
+    <nav class="py-2 bg-body-tertiary border-bottom">
+        <div class="container d-flex flex-wrap">
+          <ul class="nav me-auto">
+            <li class="nav-item"><a href="/" class="nav-link link-body-emphasis px-2">Today</a></li>
+            <li class="nav-item"><a href="#" class="nav-link link-body-emphasis px-2">Work</a></li>
+          </ul>
+        </div>
+    </nav>
+
+    <div class="colums justify-content-center d-grid mb-5">
+        <div class="d-flex justify-content-center mt-3">
+            <h1><%= new Date().getDate() + "." + (new Date().getMonth()+1) + "." + new Date().getFullYear()%></h1>
+        </div>
+        <ul id="todos" class="list-group col-6">
+           <%todos.forEach((item,i)=>{%>
+            <li style="align-items: center;" class="list-group-item my-item d-flex mt-1 rounded-3 px-2">
+                <input class="form-check-input me-1 mt-0 mx-0" type="checkbox" 
+                <%if(item.checked){%>
+                checked
+                <%}%>
+                 aria-label="..." onchange="checkTodo(<%=i%>)">
+                 <div class="ms-1 d-flex flex-grow-1">
+                    <%if(item.checked){%>
+                        <s><%=item.text%></s>
+                    <%}else{%>
+                    <%=item.text%>
+                    <%}%>
+                </div>
+                <div class="my-btn rounded-1" onclick="deleteTodo(<%=i%>)"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-x-circle-fill" viewBox="0 0 16 16">
+                    <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zM5.354 4.646a.5.5 0 1 0-.708.708L7.293 8l-2.647 2.646a.5.5 0 0 0 .708.708L8 8.707l2.646 2.647a.5.5 0 0 0 .708-.708L8.707 8l2.647-2.646a.5.5 0 0 0-.708-.708L8 7.293 5.354 4.646z"/>
+                </svg></div>
+            </li>
+            <%})%>
+        </ul>
+        <form class="mt-2" action="/" method="POST" onsubmit="event.preventDefault(); postTodo(event)">
+            <input class="rounded-2" style="width: 350px;" type="text" id="newtodo" name="text">
+            <button style="color: white; background-color: black;" class="rounded-3" type="submit" >Add</button>
+        </form>
+    </div>
+    <template id="todo">
+        <li style="align-items: center;" class="list-group-item my-item d-flex mt-1 rounded-3 px-2">
+            <input id="checkbox" class="form-check-input me-1 mt-0 mx-0" type="checkbox" 
+             aria-label="...">
+             <div id="text" class="ms-1 d-flex flex-grow-1">
+           
+            </div>
+            <div id="delete_button" class="my-btn rounded-1"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-x-circle-fill" viewBox="0 0 16 16">
+                <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zM5.354 4.646a.5.5 0 1 0-.708.708L7.293 8l-2.647 2.646a.5.5 0 0 0 .708.708L8 8.707l2.646 2.647a.5.5 0 0 0 .708-.708L8.707 8l2.647-2.646a.5.5 0 0 0-.708-.708L8 7.293 5.354 4.646z"/>
+            </svg></div>
+        </li>
+    </template>
+</body>
+<script>
+    async function checkTodo(i){
+        let response = await fetch("/todos", {
+            headers: {
+                "Content-Type": "application/json"
+            },
+            method: "put",  
+            body: JSON.stringify({
+                todo: i
+            })
+        })
+        let items = await response.json();
+        render(items);
+        
+    }
+
+    async function deleteTodo(i){
+        let response = await fetch("/todos", {
+            headers: {
+                "Content-Type": "application/json"
+            },
+            method: "delete",  
+            body: JSON.stringify({
+                todo: i
+            })
+        })
+        let items = await response.json();
+        render(items);
+    }
+
+    async function postTodo(e){
+        e.preventDefault();
+        let response = await fetch("/todos", {
+            headers: {
+                "Content-Type": "application/json"
+            },
+            method: "post",  
+            body: JSON.stringify({
+                text: document.getElementById("newtodo").value
+
+            })
+        })
+        document.getElementById("newtodo").value = "";
+        let items = await response.json();
+        render(items);
+        return false;
+    }
+
+    function render(items){
+        let todos = document.getElementById("todos");
+        todos.innerHTML = "";
+
+
+        let template = document.getElementById("todo");
+
+        console.log(items);
+        items.forEach((item, i) => {
+            let todo= template.content.cloneNode(true);
+            if(item.checked){
+                todo.getElementById("text").innerHTML = `<s>${item.text}</s>`
+            }
+            else{
+                todo.getElementById("text").innerText = item.text;
+            }
+            let checkbox = todo.getElementById("checkbox");
+            checkbox.checked=item.checked;
+            checkbox.addEventListener("change", ()=>{checkTodo(i)});
+
+            let deletebutton = todo.getElementById("delete_button");
+            deletebutton.addEventListener("click", ()=>{deleteTodo(i)});
+
+            todos.appendChild(todo);
+        });
+    }
+</script>
+</html>
